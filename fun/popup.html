@@ -1,18 +1,95 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Fun Extension</title>
-    <link rel="stylesheet" href="popup.css">
-    <link rel="preload" href="fonts/PixelPurl.ttf" as="font" type="font/ttf" crossorigin>
-</head>
+<html><head><meta charset="utf-8"><title>Physics Sandbox</title>
+<style>
+@font-face{font-family:'PixelPurl';src:url('fonts/PixelPurl.ttf') format('truetype');}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:560px;height:620px;background:linear-gradient(180deg,#0a0a1a,#0d0d2d);color:#fff;font-family:'PixelPurl',monospace;overflow-y:auto;overflow-x:hidden;image-rendering:pixelated}
+.title-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(90deg,#0a0a2a,#1a0a3a);border-bottom:3px solid #0ff;font-size:16px;letter-spacing:2px}
+.title-bar .logo{color:#0ff;text-shadow:0 0 15px #0ff,0 0 30px #0ff}
+.title-bar .credits{color:#888;font-size:10px;letter-spacing:0}
+#canvas{display:block;margin:0 auto;background:#0a0a1a;cursor:crosshair;border-bottom:2px solid #1a1a3a;image-rendering:pixelated}
+.tbar{display:flex;gap:4px;padding:6px 8px;background:#0d0d2d;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04)}
+.grp{color:#666;font-size:10px;padding:0 6px;letter-spacing:2px;min-width:50px}
+.tbtn{padding:7px 12px;border:2px solid #2a2a4a;border-radius:4px;background:#14142a;color:#bbb;cursor:pointer;font-size:12px;font-family:'PixelPurl',monospace;transition:0.1s;text-transform:uppercase;letter-spacing:1px}
+.tbtn:hover{border-color:#0ff;color:#0ff;background:#1a1a3a;text-shadow:0 0 10px #0ff}
+.tbtn.active{border-color:#0ff;background:rgba(0,255,255,.15);color:#0ff;text-shadow:0 0 10px #0ff}
+.tbtn.danger{border-color:#a22;color:#f55}
+.tbtn.danger:hover{border-color:#f44;color:#f99;background:rgba(255,50,50,.15)}
+.tbtn.green{border-color:#284;color:#4e7}
+.tbtn.green:hover{border-color:#4e9;color:#6f9}
+.tbtn.purple{border-color:#628;color:#a6d}
+.tbtn.purple:hover{border-color:#a4f;color:#c8f}
+.info{font-size:10px;color:#666;text-align:center;padding:4px;background:#0d0d2d;border-top:2px solid #1a1a3a;font-family:'PixelPurl',monospace;letter-spacing:1px}
+</style></head>
 <body>
-    <div class="container">
-        <img src="icons/icon.png" alt="Icon" class="icon">
-        <h1>Fun Extension</h1>
-        <p>Welcome to the Fun Extension!</p>
-        <button id="actionBtn" class="btn">Click Me!</button>
-    </div>
-    <script src="popup.js"></script>
-</body>
-</html>
+<div class="title-bar">
+<span class="logo">PHYSICS SANDBOX</span>
+<span class="credits">by m & FLUX</span>
+</div>
+<canvas id="canvas" width="540" height="360"></canvas>
+<div class="tbar">
+<span class="grp">SHAPE</span>
+<button class="tbtn active" data-mode="box">Box</button>
+<button class="tbtn" data-mode="ball">Ball</button>
+<button class="tbtn" data-mode="triangle">Tri</button>
+<button class="tbtn" data-mode="pentagon">Pent</button>
+<button class="tbtn" data-mode="hexagon">Hex</button>
+<button class="tbtn" data-mode="octagon">Oct</button>
+<button class="tbtn" data-mode="coin">Coin</button>
+<button class="tbtn" data-mode="brick">Brick</button>
+<button class="tbtn" data-mode="glass">Glass</button>
+<button class="tbtn" data-mode="bomb">Bomb</button>
+<button class="tbtn" data-mode="ice">Ice</button>
+<button class="tbtn" data-mode="metal">Metal</button>
+<button class="tbtn" id="custom-btn">Custom</button>
+</div>
+<div class="tbar" id="custom-panel" style="display:none;gap:4px;padding:4px 8px">
+<span class="grp">SIZE</span>
+<input id="cust-w" type="range" min="2" max="300" value="40" style="width:80px;accent-color:#0ff">
+<span id="cust-wv" style="color:#0ff;font-size:10px;min-width:30px">40</span>
+<span class="grp">x</span>
+<input id="cust-h" type="range" min="2" max="300" value="40" style="width:80px;accent-color:#0ff">
+<span id="cust-hv" style="color:#0ff;font-size:10px;min-width:30px">40</span>
+<span class="grp">COLOR</span>
+<input id="cust-color" type="color" value="#00ffff" style="width:30px;height:20px;background:#000;border:1px solid #0ff;cursor:pointer">
+<input type="file" id="png-input" accept="image/png,image/jpeg" style="display:none">
+<button class="tbtn" id="load-png-btn">PNG</button>
+</div>
+<div class="tbar">
+<span class="grp">TOOLS</span>
+<button class="tbtn danger" data-mode="explode">Boom</button>
+<button class="tbtn danger" data-mode="smash">Smash</button>
+<button class="tbtn danger" id="nuke-btn">Nuke</button>
+<button class="tbtn danger" id="clear-all">Clr</button>
+<button class="tbtn" id="resetrot-btn">R=0</button>
+<button class="tbtn" id="freeze-btn">Frz</button>
+<button class="tbtn" id="window-btn">Win</button>
+    <button class="tbtn" id="rtx-btn">RTX</button>
+<button class="tbtn danger" id="etd-btn" style="border-color:#ff0;color:#ff0;background:#1a1a00;opacity:0.8;transform:rotate(2deg);box-shadow:0 0 5px #ff0,0 0 20px #ff0;text-decoration:line-through;font-style:italic">ETD</button>
+</div>
+<div class="tbar">
+<span class="grp">PHYS</span>
+<button class="tbtn" id="gravity-toggle">Grav</button>
+<button class="tbtn" id="wind-toggle">Wind</button>
+<button class="tbtn" id="space-btn">Space</button>
+<button class="tbtn" id="planet-btn">Planet</button>
+<button class="tbtn danger" id="rocket-btn">Rocket</button>
+<button class="tbtn" id="confetti-btn">Party</button>
+<span class="grp">G:</span>
+<input id="grav-slider" type="range" min="0" max="50" value="10" style="width:60px;accent-color:#0ff">
+<span id="grav-val" style="color:#0ff;font-size:10px;min-width:20px">1.0</span>
+</div>
+<div class="tbar">
+<span class="grp">DATA</span>
+<button class="tbtn green" id="save1-btn">Sv1</button>
+<button class="tbtn" id="load1-btn">Ld1</button>
+<button class="tbtn green" id="save2-btn">Sv2</button>
+<button class="tbtn" id="load2-btn">Ld2</button>
+<button class="tbtn green" id="save3-btn">Sv3</button>
+<button class="tbtn" id="load3-btn">Ld3</button>
+</div>
+ <div class="info" id="info">LMB:select | Ctrl:multi | RMB:drag | T:freeze | J:smash | E:ETD | Y:R=0</div>
+<script src="vendor/matter.min.js"></script>
+<script src="vendor/physics_global.js"></script>
+<script src="popup.js"></script>
+</body></html>
